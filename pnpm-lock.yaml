@@ -166,6 +166,9 @@ importers:
         specifier: ^0.4.3
         version: 0.4.3
     devDependencies:
+      '@esbuild/win32-x64':
+        specifier: 0.28.2
+        version: 0.28.2
       '@rollup/rollup-win32-x64-msvc':
         specifier: 4.64.5
         version: 4.64.5
@@ -807,6 +810,12 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [linux]
+
+  '@esbuild/win32-x64@0.28.2':
+    resolution: {integrity: sha512-5ebpxr3nWMzrL/rnUI755Jkuee0bHL/Gq0WTF9lvcpv73wAp5eu8MfBUgWK9bhWvZjj7yX8etf/8tI8Ney695g==}
+    engines: {node: '>=18'}
+    cpu: [x64]
+    os: [win32]
 
   '@floating-ui/core@1.8.0':
     resolution: {integrity: sha512-0CIZ5itps/8x7BG8dEIhs53BvCUH2PCoogtakwRTut+Arm58sJooJ0AuZhLw2HJYIR5cMLNPBSS728sPho2khQ==}
@@ -3658,6 +3667,8 @@ snapshots:
 
   '@esbuild/linux-x64@0.28.2':
     optional: true
+
+  '@esbuild/win32-x64@0.28.2': {}
 
   '@floating-ui/core@1.8.0':
     dependencies:

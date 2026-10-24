@@ -112,6 +112,8 @@ import "./app-pages.css";
 import "./feature.css";
 
 import "./dashboard-universe.css";
+import "./dashboard-reference.css";
+import "./premium-pages.css";
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
 });
@@ -294,7 +296,7 @@ function AppFrame() {
   if (!auth.isAuthenticated) return <SignIn onLogin={auth.login} />;
 
   return (
-    <div className="app-shell ambient">
+    <div className={`app-shell ambient ${path === "/" ? "dashboard-mode" : ""}`}>
       <aside className={`sidebar ${mobileOpen ? "sidebar-open" : ""}`}>
         <Link href="/" className="brand" onClick={() => setMobileOpen(false)}>
           <div className="brand-mark">
@@ -338,6 +340,16 @@ function AppFrame() {
           ))}
         </nav>
         <div className="sidebar-bottom">
+          <div className="sidebar-knowledge-card" aria-hidden="true">
+            <div className="sidebar-knowledge-orbit">
+              <Network size={22} />
+              <span className="sidebar-orbit-dot dot-a" />
+              <span className="sidebar-orbit-dot dot-b" />
+              <span className="sidebar-orbit-dot dot-c" />
+            </div>
+            <strong>Turn documents into connected knowledge</strong>
+            <span>Upload · Explore · Ask · Discover</span>
+          </div>
           <div className="privacy-card">
             <div className="privacy-icon">
               <ShieldCheck size={16} />
@@ -379,13 +391,29 @@ function AppFrame() {
           >
             {mobileOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
-          <div className="breadcrumbs">
-            <span>Workspace</span>
-            <ChevronRight size={13} />
-            <strong>
-              {navItems.find((n) => n.href === path)?.label || "Dashboard"}
-            </strong>
-          </div>
+          {path === "/" ? (
+            <Link href="/" className="dashboard-topbar-brand">
+              <div className="brand-mark">
+                <Network size={22} />
+                <i />
+                <b />
+              </div>
+              <span>
+                <strong>
+                  GraphMind <em>AI</em>
+                </strong>
+                <small>From Documents to Connected Knowledge</small>
+              </span>
+            </Link>
+          ) : (
+            <div className="breadcrumbs">
+              <span>Workspace</span>
+              <ChevronRight size={13} />
+              <strong>
+                {navItems.find((n) => n.href === path)?.label || "Dashboard"}
+              </strong>
+            </div>
+          )}
           <div className="top-search-wrap">
             <label className="top-search">
               <Search size={16} />
@@ -505,6 +533,10 @@ function AppFrame() {
                 "G"
               ).toUpperCase()}
             </div>
+            <span className="top-user-name">
+              {auth.user?.firstName || auth.user?.email || "Your workspace"}
+            </span>
+            <ChevronDown size={14} className="top-user-chevron" />
           </div>
         </header>
         <main
@@ -798,28 +830,28 @@ function Dashboard() {
   };
   const statItems = [
     {
-      label: "Documents uploaded",
+      label: "Documents Uploaded",
       value: stats.data?.documentsUploaded,
       icon: Files,
       color: "violet",
       foot: `${stats.data?.processedDocuments ?? 0} processed`,
     },
     {
-      label: "Questions asked",
+      label: "Questions Asked",
       value: stats.data?.questionsAsked,
       icon: MessageSquareText,
       color: "blue",
       foot: "Across your workspace",
     },
     {
-      label: "Concepts extracted",
+      label: "Concepts Extracted",
       value: stats.data?.conceptsExtracted,
       icon: Sparkles,
       color: "mint",
       foot: "From processed PDFs",
     },
     {
-      label: "Connections found",
+      label: "Connections Found",
       value: stats.data?.connectionsFound,
       icon: GitBranch,
       color: "gold",
@@ -828,25 +860,35 @@ function Dashboard() {
   ];
   return (
     <div className="page-stack fade-up dashboard-universe">
-      <Header
-        eyebrow="YOUR RESEARCH DESK"
-        title={
-          <>
-            Welcome back, {auth.user?.firstName || "researcher"}
-            <span className="title-dot">.</span>
-          </>
-        }
-        subtitle="Your documents are ready to think with. What are you exploring today?"
-        action={
+      <section className="dashboard-hero" aria-labelledby="dashboard-welcome-title">
+        <div className="dashboard-hero-copy">
+          <span className="dashboard-hero-kicker">YOUR AI KNOWLEDGE EXPLORER</span>
+          <h1 id="dashboard-welcome-title">
+            Welcome back, {auth.user?.firstName || "researcher"}! <span aria-hidden="true">👋</span>
+          </h1>
+          <p>
+            Your AI-powered knowledge explorer is ready. Upload documents, ask questions,
+            and discover connections.
+          </p>
           <Link
             href="/knowledge"
-            className="button button-primary"
+            className="button button-primary dashboard-hero-cta"
             data-testid="link-upload-top"
           >
-            <Plus size={16} /> Add documents
+            <UploadCloud size={16} /> Upload Documents <ArrowRight size={15} />
           </Link>
-        }
-      />
+        </div>
+        <div className="dashboard-hero-art" aria-hidden="true">
+          <div className="hero-art-stars" />
+          <div className="hero-art-orbit hero-art-orbit-a" />
+          <div className="hero-art-orbit hero-art-orbit-b" />
+          <div className="hero-art-document hero-art-document-a"><FileText size={22} /></div>
+          <div className="hero-art-document hero-art-document-b"><BookOpen size={20} /></div>
+          <div className="hero-art-document hero-art-document-c"><Sparkles size={18} /></div>
+          <div className="hero-art-core"><Network size={32} /><span /></div>
+          <div className="hero-art-caption">Transforming documents into<br />connected knowledge</div>
+        </div>
+      </section>
       {stats.isError || docs.isError ? (
         <QueryError retry={retry} />
       ) : (
@@ -874,10 +916,10 @@ function Dashboard() {
               <div className="panel-heading">
                 <div>
                   <span className="eyebrow">LIBRARY</span>
-                  <h2>Recent documents</h2>
+                  <h2>Recent Documents</h2>
                 </div>
                 <Link href="/knowledge" className="text-link">
-                  View library <ArrowRight size={14} />
+                  View All <ArrowRight size={14} />
                 </Link>
               </div>
               {docs.isLoading ? (
@@ -912,11 +954,11 @@ function Dashboard() {
             <Panel className="insight-panel universe-insight-panel">
               <div className="panel-heading">
                 <div>
-                  <span className="eyebrow">AT A GLANCE</span>
-                  <h2>Your knowledge footprint</h2>
+                  <span className="eyebrow">DOCUMENT INSIGHTS</span>
+                  <h2>Document Insights</h2>
                 </div>
                 <Link href="/analytics" className="text-link">
-                  Analytics <ArrowRight size={14} />
+                  View All <ArrowRight size={14} />
                 </Link>
               </div>
               {stats.data &&
@@ -942,10 +984,10 @@ function Dashboard() {
               <div className="panel-heading">
                 <div>
                   <span className="eyebrow">RECENT EXPLORATIONS</span>
-                  <h2>Recent questions</h2>
+                  <h2>Recent Questions</h2>
                 </div>
                 <Link href="/history" className="text-link">
-                  View history <ArrowRight size={14} />
+                  View All <ArrowRight size={14} />
                 </Link>
               </div>
               {history.isLoading ? (
@@ -982,40 +1024,40 @@ function Dashboard() {
               <div className="panel-heading">
                 <div>
                   <span className="eyebrow">SHORTCUTS</span>
-                  <h2>Quick actions</h2>
+                  <h2>Quick Actions</h2>
                 </div>
               </div>
               <div className="action-grid">
+                <Link href="/knowledge" className="action-tile">
+                  <span className="tile-icon violet">
+                    <UploadCloud size={17} />
+                  </span>
+                  <b>Upload Documents</b>
+                  <small>Add new PDFs</small>
+                  <ArrowRight size={14} />
+                </Link>
                 <Link href="/chat" className="action-tile">
                   <span className="tile-icon blue">
                     <MessageSquareText size={17} />
                   </span>
-                  <b>Ask a question</b>
-                  <small>Find answers in your PDFs</small>
+                  <b>Start Chatting</b>
+                  <small>Ask questions</small>
                   <ArrowRight size={14} />
                 </Link>
                 <Link href="/graph" className="action-tile">
                   <span className="tile-icon mint">
                     <Network size={17} />
                   </span>
-                  <b>Explore concepts</b>
-                  <small>Trace connected ideas</small>
-                  <ArrowRight size={14} />
-                </Link>
-                <Link href="/sources" className="action-tile">
-                  <span className="tile-icon gold">
-                    <FileSearch size={17} />
-                  </span>
-                  <b>Verify evidence</b>
-                  <small>Review cited passages</small>
+                  <b>Explore Graph</b>
+                  <small>View connections</small>
                   <ArrowRight size={14} />
                 </Link>
                 <Link href="/analytics" className="action-tile">
-                  <span className="tile-icon violet">
+                  <span className="tile-icon gold">
                     <Activity size={17} />
                   </span>
-                  <b>View activity</b>
-                  <small>See stored usage trends</small>
+                  <b>View Analytics</b>
+                  <small>See insights</small>
                   <ArrowRight size={14} />
                 </Link>
               </div>
@@ -1113,14 +1155,14 @@ function GraphPreview({
   retry: () => void;
 }) {
   return (
-    <Panel className="graph-preview">
+    <Panel className="graph-preview universe-graph-panel">
       <div className="panel-heading">
         <div>
           <span className="eyebrow">CONNECTED KNOWLEDGE</span>
-          <h2>Knowledge graph</h2>
+          <h2>Knowledge Graph Preview</h2>
         </div>
         <Link href="/graph" className="text-link">
-          Explore <ArrowRight size={14} />
+          View Full Graph <ArrowRight size={14} />
         </Link>
       </div>
       {loading ? (
@@ -1135,6 +1177,10 @@ function GraphPreview({
         </div>
       ) : graph?.nodes.length ? (
         <div className="graph-visual compact">
+          <span className="graph-link-line graph-link-a" />
+          <span className="graph-link-line graph-link-b" />
+          <span className="graph-link-line graph-link-c" />
+          <span className="graph-link-line graph-link-d" />
           {graph.nodes.slice(0, 7).map((node, i) => (
             <button
               key={node.id}
@@ -1154,6 +1200,10 @@ function GraphPreview({
         </div>
       ) : (
         <div className="graph-visual compact graph-example">
+          <span className="graph-link-line graph-link-a" />
+          <span className="graph-link-line graph-link-b" />
+          <span className="graph-link-line graph-link-c" />
+          <span className="graph-link-line graph-link-d" />
           {[
             "Generative AI",
             "Deep Learning",
@@ -1651,7 +1701,7 @@ function Chat() {
                       .trim()}
                   </p>
                   <div className="answer-sources-heading">
-                    <span>According to your sources</span>
+                    <span>Sources</span>
                     <span>
                       {answer.sources.length}{" "}
                       {answer.sources.length === 1 ? "source" : "sources"}
@@ -1660,11 +1710,24 @@ function Chat() {
                   {answer.sources.length ? (
                     <div className="evidence-list">
                       {answer.sources.map((s) => (
-                        <EvidenceCard
+                        <button
                           key={s.id}
-                          source={s}
-                          onOpen={() => setLocation(sourceHref(s, answer.id))}
-                        />
+                          type="button"
+                          className="source-badge"
+                          onClick={() => {
+                            const params = new URLSearchParams({
+                              documentId: s.documentId,
+                              pageNumber: String(s.pageNumber),
+                            });
+                            setLocation(`/graph?${params.toString()}`);
+                          }}
+                          title={`Open ${s.documentName}, page ${s.pageNumber}, in Knowledge Graph`}
+                          data-testid={`source-link-${s.id}`}
+                        >
+                          <FileText size={14} />
+                          <span>{s.documentName}</span>
+                          <span className="page-label">Page {s.pageNumber}</span>
+                        </button>
                       ))}
                     </div>
                   ) : (
@@ -1878,8 +1941,11 @@ function Chat() {
 function Graph() {
   const [, setLocation] = useLocation();
   const docs = useListDocuments();
+  const initialGraphParams = new URLSearchParams(window.location.search);
+  const initialDocumentId = initialGraphParams.get("documentId") || "";
+  const initialPageNumber = initialGraphParams.get("pageNumber") || "";
   const [search, setSearch] = useState("");
-  const [documentId, setDocumentId] = useState("");
+  const [documentId, setDocumentId] = useState(initialDocumentId);
   const [relationshipType, setRelationshipType] = useState("");
   const params = useMemo(
     () => ({
