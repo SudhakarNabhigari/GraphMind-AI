@@ -241,7 +241,7 @@ function Knowledge() {
         setUploadMessage(`Adding ${index + 1} of ${validFiles.length}: ${file.name}`);
         try {
           const result = await requestUrl.mutateAsync({ data: { name: file.name, size: file.size, contentType: 'application/pdf' } });
-          const response = await fetch(result.uploadURL, { method: 'PUT', headers: { 'Content-Type': 'application/pdf' }, body: file });
+          const response = await fetch(result.uploadURL, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/pdf' }, body: file });
           if (!response.ok) throw new Error('Secure file transfer did not complete.');
           const doc = await register.mutateAsync({ data: { name: file.name, sizeBytes: file.size, contentType: 'application/pdf', objectPath: result.objectPath } });
           void qc.invalidateQueries({ queryKey: getListDocumentsQueryKey() });

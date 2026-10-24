@@ -1,4 +1,4 @@
-import {
+﻿import {
   ExchangeMobileAuthorizationCodeBody,
   ExchangeMobileAuthorizationCodeResponse,
   GetCurrentAuthUserResponse,
@@ -20,31 +20,58 @@ import {
   type SessionData,
 } from '../lib/auth';
 
+const LOCAL_DEV_AUTH =
+  process.env.NODE_ENV !== 'production' &&
+  process.env.LOCAL_DEV_AUTH === 'true';
 const OIDC_COOKIE_TTL = 10 * 60 * 1000;
 
 const router: IRouter = Router();
 
 function getOrigin(req: Request): string {
-  const proto = req.headers['x-forwarded-proto'] || 'https';
+  const forwardedProto = req.headers['x-forwarded-proto'];
+  const proto =
+    (Array.isArray(forwardedProto)
+      ? forwardedProto[0]
+      : forwardedProto?.split(',')[0]?.trim()) ||
+    req.protocol ||
+    'http';
+  const forwardedHost = req.headers['x-forwarded-host'];
   const host =
-    req.headers['x-forwarded-host'] || req.headers['host'] || 'localhost';
+    (Array.isArray(forwardedHost)
+      ? forwardedHost[0]
+      : forwardedHost?.split(',')[0]?.trim()) ||
+    req.headers['host'] ||
+    'localhost';
   return `${proto}://${host}`;
 }
 
-function setSessionCookie(res: Response, sid: string) {
+function isSecureRequest(req: Request): boolean {
+  const forwardedProto = req.headers['x-forwarded-proto'];
+  const proto = Array.isArray(forwardedProto)
+    ? forwardedProto[0]
+    : forwardedProto?.split(',')[0]?.trim();
+  return (proto || req.protocol).toLowerCase() === 'https';
+}
+
+function setSessionCookie(res: Response, sid: string, secure: boolean) {
   res.cookie(SESSION_COOKIE, sid, {
     httpOnly: true,
-    secure: true,
+    secure,
     sameSite: 'lax',
     path: '/',
     maxAge: SESSION_TTL,
   });
 }
 
-function setOidcCookie(res: Response, name: string, value: string) {
+function setOidcCookie(
+  res: Response,
+  name: string,
+  value: string,
+  secure: boolean,
+) {
   res.cookie(name, value, {
     httpOnly: true,
-    secure: true,
+    secure,
     sameSite: 'lax',
     path: '/',
     maxAge: OIDC_COOKIE_TTL,
@@ -131,8 +158,55 @@ router.get('/auth/user', (req: Request, res: Response) => {
 });
 
 router.get('/login', async (req: Request, res: Response) => {
+  const localReturnTo = getSafeReturnTo(req.query.returnTo);
+
+  if (LOCAL_DEV_AUTH) {
+    try {
+      const [dbUser] = await db
+        .insert(usersTable)
+        .values({
+          id: 'graphmind-local-developer',
+          email: 'developer@graphmind.local',
+          firstName: 'GraphMind',
+          lastName: 'Developer',
+          profileImageUrl: null,
+        })
+        .onConflictDoUpdate({
+          target: usersTable.id,
+          set: {
+            email: 'developer@graphmind.local',
+            firstName: 'GraphMind',
+            lastName: 'Developer',
+            updatedAt: new Date(),
+          },
+        })
+        .returning();
+
+      const sessionData: SessionData = {
+        user: {
+          id: dbUser.id,
+          email: dbUser.email,
+          firstName: dbUser.firstName,
+          lastName: dbUser.lastName,
+          profileImageUrl: dbUser.profileImageUrl,
+        },
+        access_token: 'local-development-only',
+      };
+
+      const sid = await createSession(sessionData);
+      setSessionCookie(res, sid, isSecureRequest(req));
+      res.redirect(localReturnTo);
+      return;
+    } catch (error) {
+      console.error('Local development login failed:', error);
+      res.status(500).json({ error: 'Local development login failed' });
+      return;
+    }
+  }
+
   const config = await getOidcConfig();
   const callbackUrl = `${getOrigin(req)}/api/callback`;
+  const secure = isSecureRequest(req);
 
   const returnTo = getSafeReturnTo(req.query.returnTo);
 
@@ -151,10 +225,10 @@ router.get('/login', async (req: Request, res: Response) => {
     nonce,
   });
 
-  setOidcCookie(res, 'code_verifier', codeVerifier);
-  setOidcCookie(res, 'nonce', nonce);
-  setOidcCookie(res, 'state', state);
-  setOidcCookie(res, 'return_to', returnTo);
+  setOidcCookie(res, 'code_verifier', codeVerifier, secure);
+  setOidcCookie(res, 'nonce', nonce, secure);
+  setOidcCookie(res, 'state', state, secure);
+  setOidcCookie(res, 'return_to', returnTo, secure);
 
   res.redirect(redirectTo.href);
 });
@@ -221,11 +295,20 @@ router.get('/callback', async (req: Request, res: Response) => {
   };
 
   const sid = await createSession(sessionData);
-  setSessionCookie(res, sid);
+  setSessionCookie(res, sid, isSecureRequest(req));
   res.redirect(returnTo);
 });
 
 router.get('/logout', async (req: Request, res: Response) => {
+  const localReturnTo = getSafeReturnTo(req.query.returnTo);
+
+  if (LOCAL_DEV_AUTH) {
+    const sid = getSessionId(req);
+    await clearSession(res, sid);
+    res.redirect(localReturnTo);
+    return;
+  }
+
   const config = await getOidcConfig();
   const origin = getOrigin(req);
   const returnTo = getSafeReturnTo(req.query.returnTo);
@@ -310,3 +393,7 @@ router.post('/mobile-auth/logout', async (req: Request, res: Response) => {
 });
 
 export default router;
+
+
+
+

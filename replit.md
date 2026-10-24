@@ -1,15 +1,19 @@
-# [Project name]
+# GraphMind AI
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+GraphMind AI turns uploaded PDFs into searchable, evidence-backed answers and an explorable knowledge graph.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000 when `PORT=5000`)
+- `pnpm --filter @workspace/graphmind-ai run dev` — run the Vite frontend (port 5173 by default; proxies `/api` to `API_URL`)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Copy `.env.example` to `.env` and provide the required values for PostgreSQL, Replit OIDC, and Replit Object Storage.
+- `OPENAI_API_KEY` is optional; without it, chat uses the explicitly-labelled document-grounded demo search fallback.
+
+For local development, run the API and frontend in separate terminals with `PORT=5000`, `VITE_PORT=5173`, `BASE_PATH=/`, and `API_URL=http://localhost:5000`.
 
 ## Stack
 
@@ -22,15 +26,25 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- Frontend shell and routes: `artifacts/graphmind-ai/src/App.tsx`
+- Frontend theme/layout: `artifacts/graphmind-ai/src/{index.css,app.css,app-pages.css,feature.css}`
+- API routes: `artifacts/api-server/src/routes`
+- PDF processing and retrieval: `artifacts/api-server/src/lib/graphmind-processing.ts`
+- Database queries: `artifacts/api-server/src/lib/graphmind-data.ts`
+- Database schema: `lib/db/src/schema`
+- API contract: `lib/api-spec/openapi.yaml`
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Browser authentication uses Replit OIDC with server-side sessions stored in PostgreSQL.
+- PDF uploads use Replit Object Storage signed URLs; the API validates the stored object before processing.
+- Retrieval is local lexical ranking over page-preserving chunks, so the MVP remains usable without an LLM key.
+- Optional OpenAI generation receives only retrieved document evidence; citations remain controlled by the API.
+- Example graph content is labelled as illustrative and is never mixed with stored document evidence.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Users sign in, upload PDFs, inspect processing status, ask grounded questions across processed documents, verify page-level evidence, explore extracted concepts and relationships, and review analytics/history.
 
 ## User preferences
 
@@ -38,7 +52,10 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- OIDC callback URLs must be registered/configured for the actual public development origin.
+- Local HTTP uses non-secure cookies; HTTPS/Replit deployments automatically use secure cookies.
+- PDF upload and processing require Replit Object Storage variables; a database alone is not sufficient.
+- Scanned PDFs without selectable text are rejected with an OCR-required status.
 
 ## Pointers
 

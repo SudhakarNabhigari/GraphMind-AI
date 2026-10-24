@@ -316,6 +316,7 @@ export async function processPdfDocument(
       .returning();
     return processed;
   } catch (error) {
+    console.error("[GraphMind PDF processing error]", error);
     const message =
       error instanceof GraphMindError
         ? error.message

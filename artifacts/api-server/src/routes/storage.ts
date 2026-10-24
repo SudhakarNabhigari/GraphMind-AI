@@ -1,4 +1,4 @@
-import { Readable } from 'stream';
+﻿import { Readable } from 'stream';
 import {
   RequestUploadUrlBody,
   RequestUploadUrlResponse,
@@ -9,6 +9,7 @@ import { ObjectPermission } from '../lib/objectAcl';
 import {
   ObjectNotFoundError,
   ObjectStorageService,
+  saveLocalUploadedPdf,
 } from '../lib/objectStorage';
 
 const router: IRouter = Router();
@@ -31,7 +32,7 @@ function hasAuthenticatedSession(
  * POST /storage/uploads/request-url
  *
  * Request a presigned URL for file upload.
- * The client sends JSON metadata (name, size, contentType) — NOT the file.
+ * The client sends JSON metadata (name, size, contentType) â€” NOT the file.
  * Then uploads the file directly to the returned presigned URL.
  * Requires auth middleware so public callers cannot mint write-capable URLs.
  */
@@ -64,7 +65,11 @@ router.post(
         return;
       }
 
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+            const rawUploadURL = await objectStorageService.getObjectEntityUploadURL();
+      const uploadURL =
+        process.env.LOCAL_FILE_STORAGE === 'true'
+          ? new URL(rawUploadURL, 'http://localhost:' + (process.env.PORT || '5000')).toString()
+          : rawUploadURL;
       const objectPath =
         objectStorageService.normalizeObjectEntityPath(uploadURL);
 
@@ -86,9 +91,37 @@ router.post(
  * GET /storage/public-objects/*
  *
  * Serve public assets from PUBLIC_OBJECT_SEARCH_PATHS.
- * These are unconditionally public — no authentication or ACL checks.
+ * These are unconditionally public â€” no authentication or ACL checks.
  * IMPORTANT: Always provide this endpoint when object storage is set up.
  */
+router.put('/storage/uploads/:objectId', async (req: Request, res: Response) => {
+  if (process.env.LOCAL_FILE_STORAGE !== 'true') {
+    res.status(404).json({ error: 'Local upload endpoint is disabled' });
+    return;
+  }
+  if (!hasAuthenticatedSession(req)) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+  try {
+    const chunks: Buffer[] = [];
+    let total = 0;
+    for await (const chunk of req) {
+      const data = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      total += data.length;
+      if (total > 20 * 1024 * 1024) {
+        res.status(413).json({ error: 'PDF exceeds 20 MB limit' });
+        return;
+      }
+      chunks.push(data);
+    }
+    saveLocalUploadedPdf(Array.isArray(req.params.objectId) ? req.params.objectId[0] : req.params.objectId, Buffer.concat(chunks));
+    res.status(200).json({ ok: true });
+  } catch (error) {
+    req.log.error({ err: error }, 'Local PDF upload failed');
+    res.status(400).json({ error: 'PDF upload failed' });
+  }
+});
 router.get(
   '/storage/public-objects/*filePath',
   async (req: Request, res: Response) => {
@@ -175,3 +208,7 @@ router.get('/storage/objects/*path', async (req: Request, res: Response) => {
 });
 
 export default router;
+
+
+
+

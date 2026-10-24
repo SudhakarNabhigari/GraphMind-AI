@@ -118,8 +118,20 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     `,
     },
   });
+
+  await copyPdfWorker(distDir);
 }
 
+async function copyPdfWorker(distDir) {
+  const fs = await import("node:fs/promises");
+  const require = createRequire(import.meta.url);
+  const pdfEntry = require.resolve("pdfjs-dist/legacy/build/pdf.mjs");
+  const workerSource = path.join(path.dirname(pdfEntry), "pdf.worker.mjs");
+  const workerDestination = path.join(distDir, "pdf.worker.mjs");
+
+  await fs.copyFile(workerSource, workerDestination);
+  console.log("Copied PDF.js worker:", workerDestination);
+}
 buildAll().catch((err) => {
   console.error(err);
   process.exit(1);

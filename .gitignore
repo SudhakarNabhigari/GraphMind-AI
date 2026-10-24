@@ -53,3 +53,11 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Local development PDF storage
+.local-object-storage/
+
+# Local environment secrets
+.env
+.env.*
+!.env.example
