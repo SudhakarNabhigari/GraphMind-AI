@@ -1,0 +1,12 @@
+const fs = await import("node:fs/promises");
+const require = createRequire(import.meta.url);
+
+async function copyPdfWorker(distDir) {
+  const pdfEntry = require.resolve("pdfjs-dist/legacy/build/pdf.mjs");
+  const workerSource = path.join(path.dirname(pdfEntry), "pdf.worker.mjs");
+  const workerDestination = path.join(distDir, "pdf.worker.mjs");
+
+  await fs.copyFile(workerSource, workerDestination);
+  console.log("Copied PDF.js worker:", workerDestination);
+}
+
