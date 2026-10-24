@@ -3,20 +3,26 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: GraphMind AI document intelligence API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: Auth
+  - name: Storage
+  - name: Documents
+  - name: Chat
+  - name: Graph
+  - name: Sources
+  - name: Analytics
+  - name: Search
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +30,663 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /auth/user:
+    get:
+      operationId: getCurrentAuthUser
+      tags: [Auth]
+      summary: Get the current user
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationSessionHeader"
+        - $ref: "#/components/parameters/SessionCookie"
+      responses:
+        "200":
+          description: Current auth state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUserEnvelope"
+  /login:
+    get:
+      operationId: beginBrowserLogin
+      tags: [Auth]
+      summary: Start browser login
+      parameters:
+        - name: returnTo
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "302": { description: Redirect to the identity provider }
+  /callback:
+    get:
+      operationId: handleBrowserLoginCallback
+      tags: [Auth]
+      summary: Complete browser login
+      parameters:
+        - name: code
+          in: query
+          required: false
+          schema: { type: string }
+        - name: state
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "302": { description: Redirect to the application }
+  /logout:
+    get:
+      operationId: logoutBrowserSession
+      tags: [Auth]
+      summary: End the browser session
+      parameters:
+        - name: returnTo
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "302": { description: Redirect after logout }
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [Storage]
+      summary: Request a private PDF upload URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadUrlRequest"
+      responses:
+        "200":
+          description: Upload URL generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadUrlResponse"
+        "400":
+          description: Invalid upload metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /documents:
+    get:
+      operationId: listDocuments
+      tags: [Documents]
+      summary: List the current user's documents
+      responses:
+        "200":
+          description: Documents
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Document" }
+    post:
+      operationId: registerDocument
+      tags: [Documents]
+      summary: Register a completed direct upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DocumentUploadInput" }
+      responses:
+        "201":
+          description: Document registered
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Document" }
+        "400":
+          description: Invalid PDF or upload metadata
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+  /documents/{documentId}:
+    get:
+      operationId: getDocument
+      tags: [Documents]
+      summary: Get document details
+      parameters:
+        - $ref: "#/components/parameters/DocumentId"
+      responses:
+        "200":
+          description: Document
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Document" }
+        "404":
+          description: Document not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    delete:
+      operationId: deleteDocument
+      tags: [Documents]
+      summary: Delete a document and its derived knowledge
+      parameters:
+        - $ref: "#/components/parameters/DocumentId"
+      responses:
+        "204": { description: Document and associated records deleted }
+        "404":
+          description: Document not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+  /documents/{documentId}/process:
+    post:
+      operationId: processDocument
+      tags: [Documents]
+      summary: Extract PDF text and build searchable knowledge
+      parameters:
+        - $ref: "#/components/parameters/DocumentId"
+      responses:
+        "200":
+          description: Processing result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Document" }
+        "422":
+          description: PDF has no extractable text or is invalid
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+  /documents/{documentId}/pages/{pageNumber}:
+    get:
+      operationId: getDocumentPage
+      tags: [Documents]
+      summary: Get extracted evidence for a PDF page
+      parameters:
+        - $ref: "#/components/parameters/DocumentId"
+        - name: pageNumber
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Extracted page passages
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DocumentPage" }
+        "404":
+          description: Page not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+  /dashboard/stats:
+    get:
+      operationId: getDashboardStats
+      tags: [Analytics]
+      summary: Get current-user dashboard totals
+      responses:
+        "200":
+          description: Dashboard totals
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DashboardStats" }
+  /chat/ask:
+    post:
+      operationId: askKnowledgeBase
+      tags: [Chat]
+      summary: Ask a document-grounded question
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AskQuestionInput" }
+      responses:
+        "200":
+          description: Answer with validated evidence references
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HistoryItem" }
+        "400":
+          description: Invalid question
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+  /chat/history:
+    get:
+      operationId: listQuestionHistory
+      tags: [Chat]
+      summary: List recent questions and answers
+      responses:
+        "200":
+          description: Saved question history
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/HistoryItem" }
+  /chat/history/{historyId}:
+    get:
+      operationId: getHistoryItem
+      tags: [Chat]
+      summary: Reopen a saved answer with its evidence
+      parameters:
+        - name: historyId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Saved answer
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HistoryItem" }
+        "404":
+          description: History item not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    delete:
+      operationId: deleteHistoryItem
+      tags: [Chat]
+      summary: Delete a saved answer
+      parameters:
+        - name: historyId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204": { description: History item deleted }
+        "404":
+          description: History item not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+  /chat/history/{historyId}/feedback:
+    post:
+      operationId: submitAnswerFeedback
+      tags: [Chat]
+      summary: Record answer feedback
+      parameters:
+        - name: historyId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AnswerFeedbackInput" }
+      responses:
+        "200":
+          description: Feedback recorded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FeedbackResult" }
+  /graph:
+    get:
+      operationId: getKnowledgeGraph
+      tags: [Graph]
+      summary: Get document-derived concepts and relationships
+      parameters:
+        - name: documentId
+          in: query
+          required: false
+          schema: { type: string }
+        - name: relationshipType
+          in: query
+          required: false
+          schema: { type: string }
+        - name: search
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: Graph data
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/KnowledgeGraph" }
+  /graph/concepts/{conceptId}:
+    get:
+      operationId: getConcept
+      tags: [Graph]
+      summary: Get concept provenance and neighboring concepts
+      parameters:
+        - name: conceptId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Concept details
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ConceptDetails" }
+  /graph/relationships/{relationshipId}:
+    get:
+      operationId: getRelationship
+      tags: [Graph]
+      summary: Get relationship evidence
+      parameters:
+        - name: relationshipId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Relationship details
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Relationship" }
+  /sources:
+    get:
+      operationId: listSources
+      tags: [Sources]
+      summary: Browse extracted source evidence
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema: { type: string }
+        - name: documentId
+          in: query
+          required: false
+          schema: { type: string }
+        - name: concept
+          in: query
+          required: false
+          schema: { type: string }
+        - name: historyId
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: Source evidence
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/EvidenceSource" }
+  /analytics:
+    get:
+      operationId: getAnalytics
+      tags: [Analytics]
+      summary: Get document and knowledge analytics
+      parameters:
+        - name: range
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [7d, 30d, all]
+            default: 30d
+      responses:
+        "200":
+          description: Current-user analytics
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnalyticsData" }
+  /search:
+    get:
+      operationId: searchKnowledgeBase
+      tags: [Search]
+      summary: Search documents, concepts, answers, and evidence
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema: { type: string, minLength: 1 }
+      responses:
+        "200":
+          description: Categorized search results
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SearchResults" }
 components:
+  parameters:
+    AuthorizationSessionHeader:
+      name: Authorization
+      in: header
+      required: false
+      schema: { type: string }
+    SessionCookie:
+      name: sid
+      in: cookie
+      required: false
+      schema: { type: string }
+    DocumentId:
+      name: documentId
+      in: path
+      required: true
+      schema: { type: string }
   schemas:
     HealthStatus:
       type: object
       properties:
-        status:
-          type: string
-      required:
-        - status
-
+        status: { type: string }
+      required: [status]
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+    AuthUser:
+      type: object
+      required: [id, email, firstName, lastName, profileImageUrl]
+      properties:
+        id: { type: string }
+        email: { type: [string, "null"], format: email }
+        firstName: { type: [string, "null"] }
+        lastName: { type: [string, "null"] }
+        profileImageUrl: { type: [string, "null"], format: uri }
+    AuthUserEnvelope:
+      type: object
+      required: [user]
+      properties:
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/AuthUser"
+            - type: "null"
+    UploadUrlRequest:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 255 }
+        size: { type: integer, minimum: 1, maximum: 20971520 }
+        contentType: { type: string, const: application/pdf }
+    UploadUrlResponse:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL: { type: string, format: uri }
+        objectPath: { type: string }
+        metadata: { $ref: "#/components/schemas/UploadUrlRequest" }
+    DocumentUploadInput:
+      type: object
+      required: [name, sizeBytes, contentType, objectPath]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 255 }
+        sizeBytes: { type: integer, minimum: 1, maximum: 20971520 }
+        contentType: { type: string, const: application/pdf }
+        objectPath: { type: string, minLength: 1 }
+    Document:
+      type: object
+      required: [id, name, sizeBytes, pageCount, status, uploadedAt, extractedTextAvailable, conceptsCount, objectPath]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        sizeBytes: { type: integer }
+        pageCount: { type: ["integer", "null"] }
+        status: { type: string, enum: [uploaded, processing, processed, failed] }
+        statusMessage: { type: ["string", "null"] }
+        uploadedAt: { type: string, format: date-time }
+        processedAt: { type: ["string", "null"], format: date-time }
+        extractedTextAvailable: { type: boolean }
+        conceptsCount: { type: integer }
+        objectPath: { type: string }
+    DocumentPage:
+      type: object
+      required: [documentId, documentName, pageNumber, passages]
+      properties:
+        documentId: { type: string }
+        documentName: { type: string }
+        pageNumber: { type: integer, minimum: 1 }
+        passages:
+          type: array
+          items: { $ref: "#/components/schemas/EvidenceSource" }
+    DashboardStats:
+      type: object
+      required: [documentsUploaded, questionsAsked, conceptsExtracted, connectionsFound, processedDocuments, failedDocuments]
+      properties:
+        documentsUploaded: { type: integer }
+        questionsAsked: { type: integer }
+        conceptsExtracted: { type: integer }
+        connectionsFound: { type: integer }
+        processedDocuments: { type: integer }
+        failedDocuments: { type: integer }
+    AskQuestionInput:
+      type: object
+      required: [question]
+      properties:
+        question: { type: string, minLength: 2, maxLength: 4000 }
+        documentIds:
+          type: array
+          items: { type: string }
+    EvidenceSource:
+      type: object
+      required: [id, documentId, documentName, pageNumber, passage, relevance]
+      properties:
+        id: { type: string }
+        documentId: { type: string }
+        documentName: { type: string }
+        pageNumber: { type: integer, minimum: 1 }
+        passage: { type: string }
+        relevance: { type: number }
+        concept: { type: ["string", "null"] }
+        historyId: { type: ["string", "null"] }
+        referencedAt: { type: ["string", "null"], format: date-time }
+    HistoryItem:
+      type: object
+      required: [id, question, answer, createdAt, sources, documentNames, helpful, mode]
+      properties:
+        id: { type: string }
+        question: { type: string }
+        answer: { type: string }
+        createdAt: { type: string, format: date-time }
+        sources:
+          type: array
+          items: { $ref: "#/components/schemas/EvidenceSource" }
+        documentNames:
+          type: array
+          items: { type: string }
+        helpful: { type: ["boolean", "null"] }
+        mode: { type: string, enum: [ai, demo] }
+    AnswerFeedbackInput:
+      type: object
+      required: [helpful]
+      properties:
+        helpful: { type: boolean }
+    FeedbackResult:
+      type: object
+      required: [success, helpful]
+      properties:
+        success: { type: boolean }
+        helpful: { type: boolean }
+    GraphNode:
+      type: object
+      required: [id, label, description, category, frequency, documentIds, pages]
+      properties:
+        id: { type: string }
+        label: { type: string }
+        description: { type: ["string", "null"] }
+        category: { type: string }
+        frequency: { type: integer }
+        documentIds:
+          type: array
+          items: { type: string }
+        pages:
+          type: array
+          items: { type: integer }
+    Relationship:
+      type: object
+      required: [id, source, target, label, evidence, documentId, documentName, pageNumber]
+      properties:
+        id: { type: string }
+        source: { type: string }
+        target: { type: string }
+        label: { type: string }
+        evidence: { type: string }
+        documentId: { type: string }
+        documentName: { type: string }
+        pageNumber: { type: integer, minimum: 1 }
+    KnowledgeGraph:
+      type: object
+      required: [nodes, edges, isExample]
+      properties:
+        nodes:
+          type: array
+          items: { $ref: "#/components/schemas/GraphNode" }
+        edges:
+          type: array
+          items: { $ref: "#/components/schemas/Relationship" }
+        isExample: { type: boolean }
+    ConceptDetails:
+      type: object
+      required: [concept, relationships, sources]
+      properties:
+        concept: { $ref: "#/components/schemas/GraphNode" }
+        relationships:
+          type: array
+          items: { $ref: "#/components/schemas/Relationship" }
+        sources:
+          type: array
+          items: { $ref: "#/components/schemas/EvidenceSource" }
+    AnalyticsData:
+      type: object
+      required: [stats, questionsByDate, topConcepts, topDocuments, processingBreakdown, graphGrowth]
+      properties:
+        stats: { $ref: "#/components/schemas/DashboardStats" }
+        questionsByDate:
+          type: array
+          items: { $ref: "#/components/schemas/DateCount" }
+        topConcepts:
+          type: array
+          items: { $ref: "#/components/schemas/RankedCount" }
+        topDocuments:
+          type: array
+          items: { $ref: "#/components/schemas/RankedCount" }
+        processingBreakdown:
+          type: array
+          items: { $ref: "#/components/schemas/StatusCount" }
+        graphGrowth:
+          type: array
+          items: { $ref: "#/components/schemas/DateCount" }
+    DateCount:
+      type: object
+      required: [date, count]
+      properties:
+        date: { type: string }
+        count: { type: integer }
+    RankedCount:
+      type: object
+      required: [label, count]
+      properties:
+        label: { type: string }
+        count: { type: integer }
+    StatusCount:
+      type: object
+      required: [status, count]
+      properties:
+        status: { type: string }
+        count: { type: integer }
+    SearchResults:
+      type: object
+      required: [documents, concepts, questions, sources]
+      properties:
+        documents:
+          type: array
+          items: { $ref: "#/components/schemas/Document" }
+        concepts:
+          type: array
+          items: { $ref: "#/components/schemas/GraphNode" }
+        questions:
+          type: array
+          items: { $ref: "#/components/schemas/HistoryItem" }
+        sources:
+          type: array
+          items: { $ref: "#/components/schemas/EvidenceSource" }

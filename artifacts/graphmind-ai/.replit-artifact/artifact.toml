@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "GraphMind AI"
+description = "A document intelligence workspace for uploading PDFs, asking grounded questions with verifiable page citations, and exploring evidence-backed concept relationships."
+version = "1.0.0"
+id = "artifacts/graphmind-ai"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21270
+
+[services.development]
+run = "pnpm --filter @workspace/graphmind-ai run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/graphmind-ai", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/graphmind-ai/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21270"
+BASE_PATH = "/"
