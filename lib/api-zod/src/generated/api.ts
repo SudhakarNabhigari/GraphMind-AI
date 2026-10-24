@@ -66,6 +66,36 @@ export const LogoutBrowserSessionResponse = zod.void()
 
 
 /**
+ * @summary Exchange a mobile authorization code for a session token
+ */
+
+
+
+
+
+
+export const ExchangeMobileAuthorizationCodeBody = zod.object({
+  "code": zod.string().min(1),
+  "code_verifier": zod.string().min(1),
+  "redirect_uri": zod.string().url(),
+  "state": zod.string().min(1),
+  "nonce": zod.string().min(1).optional()
+})
+
+export const ExchangeMobileAuthorizationCodeResponse = zod.object({
+  "token": zod.string()
+})
+
+
+/**
+ * @summary End a mobile session
+ */
+export const LogoutMobileSessionResponse = zod.object({
+  "success": zod.literal(true)
+})
+
+
+/**
  * @summary Request a private PDF upload URL
  */
 export const requestUploadUrlBodyNameMax = 255;

@@ -1,0 +1,297 @@
+.graph-filter-bar {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, 240px) minmax(160px, 210px);
+  gap: 9px;
+}
+
+.graph-canvas {
+  min-height: 480px;
+  position: relative;
+  overflow: hidden;
+}
+
+.graphflow-frame {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(26, 64, 127, .19), transparent 55%),
+    linear-gradient(180deg, rgba(8, 19, 37, .12), rgba(7, 16, 32, .27));
+}
+
+.graphflow-frame .react-flow {
+  background: transparent;
+  color: #dce6f5;
+}
+
+.graphflow-frame .react-flow__pane {
+  cursor: grab;
+}
+
+.graphflow-frame .react-flow__pane:active {
+  cursor: grabbing;
+}
+
+.graphflow-frame .react-flow__node-concept {
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.graphflow-node {
+  min-width: 104px;
+  max-width: 170px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 9px 11px 8px;
+  border: 1px solid rgba(123, 143, 190, .25);
+  border-radius: 11px;
+  background: linear-gradient(155deg, rgba(13, 29, 55, .97), rgba(8, 19, 39, .97));
+  color: #e1eafa;
+  box-shadow: 0 8px 22px rgba(1, 6, 17, .38), 0 0 15px rgba(62, 127, 218, .08);
+  transition: border-color .18s, box-shadow .18s, transform .18s;
+  text-align: center;
+}
+
+.graphflow-node:hover,
+.graphflow-node.node-selected {
+  border-color: rgba(151, 127, 255, .8);
+  box-shadow: 0 0 24px rgba(111, 78, 255, .26), 0 10px 22px rgba(1, 6, 17, .42);
+}
+
+.graphflow-node strong {
+  max-width: 148px;
+  color: #e2eaf7;
+  font-size: 9px;
+  font-weight: 650;
+  line-height: 1.35;
+  white-space: normal;
+}
+
+.graphflow-node small {
+  color: #788ba9;
+  font-size: 7px;
+  letter-spacing: .04em;
+}
+
+.graphflow-node-orb {
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(148, 113, 255, .34);
+  border-radius: 8px;
+  background: rgba(101, 70, 255, .2);
+}
+
+.graphflow-node-orb span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #a891ff;
+  box-shadow: 0 0 10px rgba(151, 123, 255, .85);
+}
+
+.graphflow-node.category-1 .graphflow-node-orb {
+  border-color: rgba(34, 211, 238, .34);
+  background: rgba(34, 211, 238, .14);
+}
+
+.graphflow-node.category-1 .graphflow-node-orb span {
+  background: #48d4e5;
+  box-shadow: 0 0 10px rgba(34, 211, 238, .76);
+}
+
+.graphflow-node.category-2 .graphflow-node-orb {
+  border-color: rgba(38, 132, 255, .38);
+  background: rgba(38, 132, 255, .16);
+}
+
+.graphflow-node.category-2 .graphflow-node-orb span {
+  background: #5eacff;
+  box-shadow: 0 0 10px rgba(38, 132, 255, .76);
+}
+
+.graphflow-node.category-3 .graphflow-node-orb {
+  border-color: rgba(52, 211, 153, .34);
+  background: rgba(52, 211, 153, .13);
+}
+
+.graphflow-node.category-3 .graphflow-node-orb span {
+  background: #58d7b6;
+  box-shadow: 0 0 10px rgba(52, 211, 153, .72);
+}
+
+.graphflow-node .graphflow-handle {
+  width: 5px;
+  height: 5px;
+  min-width: 5px;
+  min-height: 5px;
+  border: 0;
+  background: #48a8ff;
+  opacity: 0;
+}
+
+.graphflow-frame .react-flow__edge-path {
+  stroke: rgba(62, 148, 225, .58);
+  stroke-width: 1.4;
+  transition: stroke .16s, stroke-width .16s;
+}
+
+.graphflow-frame .react-flow__edge.selected .react-flow__edge-path,
+.graphflow-frame .react-flow__edge.animated .react-flow__edge-path {
+  stroke: #5bbaff;
+  stroke-width: 2;
+  filter: drop-shadow(0 0 4px rgba(38, 132, 255, .7));
+}
+
+.graphflow-frame .react-flow__edge-text {
+  fill: #8bb8d2;
+  font-size: 8px;
+}
+
+.graphflow-frame .react-flow__controls {
+  overflow: hidden;
+  border: 1px solid rgba(113, 143, 187, .2);
+  border-radius: 8px;
+  background: rgba(7, 19, 38, .94);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .28);
+}
+
+.graphflow-frame .react-flow__controls-button {
+  width: 27px;
+  height: 27px;
+  border-bottom-color: rgba(113, 143, 187, .13);
+  background: transparent;
+  fill: #a5b9d2;
+}
+
+.graphflow-frame .react-flow__controls-button:hover {
+  background: rgba(101, 70, 255, .17);
+  fill: #fff;
+}
+
+.graphflow-frame .react-flow__minimap {
+  overflow: hidden;
+  border: 1px solid rgba(113, 143, 187, .2);
+  border-radius: 8px;
+  background: rgba(7, 19, 38, .86);
+}
+
+.graph-example-stamp {
+  position: absolute;
+  z-index: 5;
+  right: 14px;
+  bottom: 13px;
+  pointer-events: none;
+}
+
+.graph-example .graph-node {
+  opacity: .74;
+}
+
+.graph-example .graph-upload-link {
+  position: absolute;
+  z-index: 4;
+  left: 14px;
+  bottom: 13px;
+  padding: 6px 8px;
+  border: 1px solid rgba(125, 108, 255, .25);
+  border-radius: 6px;
+  background: rgba(8, 18, 36, .78);
+  color: #a99cff;
+  font-size: 8px;
+  text-decoration: none;
+}
+
+.graph-example .graph-upload-link:hover {
+  border-color: rgba(125, 108, 255, .55);
+  color: #d2caff;
+}
+
+.page-reference-button,
+.relation-source-button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.page-reference-button:hover,
+.relation-source-button:hover {
+  color: #d9e8fa;
+  background: rgba(38, 132, 255, .07);
+}
+
+.page-reference-button > svg:last-child,
+.relation-source-button > svg:last-child {
+  margin-left: auto;
+  color: #8298b6;
+}
+
+.source-unavailable {
+  margin-top: 12px;
+  align-items: flex-start;
+  line-height: 1.55;
+}
+
+.source-controls .search-field {
+  min-width: 180px;
+}
+
+.source-controls .filter-control {
+  flex: none;
+  min-width: 160px;
+}
+
+.clear-history-filter {
+  flex: none;
+}
+
+.upload-progress span {
+  animation: none;
+  transition: width .25s ease;
+}
+
+@media (max-width: 800px) {
+  .graph-canvas {
+    min-height: 440px;
+  }
+
+  .source-controls {
+    flex-wrap: wrap;
+  }
+
+  .source-controls .search-field {
+    flex-basis: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .graph-filter-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .graph-canvas {
+    min-height: 400px;
+  }
+
+  .source-controls .filter-control {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .clear-history-filter {
+    align-self: flex-start;
+  }
+
+  .graph-example-stamp {
+    right: 9px;
+    bottom: 9px;
+    font-size: 6px;
+  }
+}
